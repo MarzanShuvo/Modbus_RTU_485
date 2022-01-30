@@ -205,10 +205,6 @@ check_address:
 	.cfi_endproc
 .LFE11:
 	.size	check_address, .-check_address
-	.section	.rodata
-.LC0:
-	.string	" %8X \n"
-	.text
 	.globl	check_valid_address_and_quantity
 	.type	check_valid_address_and_quantity, @function
 check_valid_address_and_quantity:
@@ -220,7 +216,7 @@ check_valid_address_and_quantity:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
-	subq	$32, %rsp
+	subq	$24, %rsp
 	movl	%edi, %edx
 	movl	%esi, %eax
 	movw	%dx, -20(%rbp)
@@ -229,11 +225,6 @@ check_valid_address_and_quantity:
 	movzwl	-24(%rbp), %eax
 	addl	%edx, %eax
 	movw	%ax, -2(%rbp)
-	movzwl	-2(%rbp), %eax
-	movl	%eax, %esi
-	leaq	.LC0(%rip), %rdi
-	movl	$0, %eax
-	call	printf@PLT
 	movzwl	-20(%rbp), %eax
 	movl	%eax, %edi
 	call	check_address
@@ -399,7 +390,7 @@ error_generate:
 .LFE16:
 	.size	error_generate, .-error_generate
 	.section	.rodata
-.LC1:
+.LC0:
 	.string	"ok!"
 	.text
 	.globl	check_function
@@ -467,6 +458,7 @@ check_function:
 	movzbl	%al, %eax
 	orl	%edx, %eax
 	movw	%ax, -38(%rbp)
+	movw	$2000, -38(%rbp)
 	cmpb	$5, -45(%rbp)
 	jne	.L39
 	movq	-56(%rbp), %rax
@@ -492,7 +484,7 @@ check_function:
 	movb	%al, -41(%rbp)
 	cmpb	$5, -41(%rbp)
 	jne	.L42
-	leaq	.LC1(%rip), %rdi
+	leaq	.LC0(%rip), %rdi
 	call	puts@PLT
 	movl	$2, %edi
 	call	malloc@PLT
@@ -544,9 +536,9 @@ check_function:
 .LFE17:
 	.size	check_function, .-check_function
 	.section	.rodata
-.LC2:
+.LC1:
 	.string	"%x"
-.LC3:
+.LC2:
 	.string	" ,"
 	.text
 	.globl	main
@@ -583,10 +575,10 @@ main:
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	movl	%eax, %esi
-	leaq	.LC2(%rip), %rdi
+	leaq	.LC1(%rip), %rdi
 	movl	$0, %eax
 	call	printf@PLT
-	leaq	.LC3(%rip), %rdi
+	leaq	.LC2(%rip), %rdi
 	movl	$0, %eax
 	call	printf@PLT
 	addl	$1, -32(%rbp)

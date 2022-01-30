@@ -2233,7 +2233,7 @@ uint8_t check_address(uint32_t address){
 
 uint8_t check_valid_address_and_quantity(uint16_t address, uint16_t quantity){
     uint16_t new_address = address + quantity;
-    printf(" %8X \n", new_address);
+
     if(check_address(address)==5 && check_address(new_address)==5){
         return 5;
     }
@@ -2318,6 +2318,8 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
 
     uint16_t quantity = ((uint16_t)data[4] << 8) | (uint16_t) data[5];
 
+    quantity = 0x07D0;
+
 
     if(server_ok==5){
         uint8_t fun_code_ok = check_valid_function_code(data[1]);
@@ -2357,7 +2359,7 @@ int main(){
 
     unsigned char p[6]={0x01, 0x01, 0X00, 0X01, 0x00, 0x05};
     unsigned int crc = 0xC9AD;
-# 210 "modbus.c"
+# 212 "modbus.c"
     unsigned char* result = check_function(p, crc);
     for(int i=0; i<2;i++){
         printf("%x", result[i]);

@@ -50,7 +50,7 @@ uint8_t check_valid_function_code(uint8_t code){
 }
 //check valid quantity
 uint8_t check_valid_quantity(uint16_t quantity){
-    if(starting_quantity<quantity && last_quantity>quantity){
+    if(starting_quantity<=quantity && last_quantity>=quantity){
         return UINT8_C(5);
     }
     else{

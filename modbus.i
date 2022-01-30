@@ -2166,7 +2166,8 @@ extern int getloadavg (double __loadavg[], int __nelem)
 
 # 6 "modbus.c"
 const uint8_t device_id = 0x01;
-const uint8_t holding_register = 0x01;
+const uint8_t holding_register = 0x03;
+const uint8_t coil_register = 0x01;
 const uint16_t starting_address = 0x0000;
 const uint16_t last_address = 0xFFF9;
 const uint16_t starting_quantity = 0x0000;
@@ -2203,7 +2204,7 @@ uint8_t check_is_readable(){
 
 
 uint8_t check_valid_function_code(uint8_t code){
-    if(code==holding_register){
+    if(code==holding_register || code==coil_register){
         return 5;
     }
     else{
@@ -2212,7 +2213,7 @@ uint8_t check_valid_function_code(uint8_t code){
 }
 
 uint8_t check_valid_quantity(uint16_t quantity){
-    if(starting_quantity<quantity && last_quantity>quantity){
+    if(starting_quantity<=quantity && last_quantity>=quantity){
         return 5;
     }
     else{
@@ -2318,7 +2319,7 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
 
     uint16_t quantity = ((uint16_t)data[4] << 8) | (uint16_t) data[5];
 
-    quantity = 0x07D0;
+
 
 
     if(server_ok==5){
@@ -2328,9 +2329,17 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
             if(quantity_check==5){
                 uint8_t check_add_quant = check_valid_address_and_quantity(start_address, quantity);
                 if(check_add_quant==5){
-                    printf("ok!\n");
-                    unsigned char *err = malloc(2);
-                    return err;
+                    uint8_t check_readable = check_is_readable();
+                    if(check_readable==5){
+                        printf("Ok!\n");
+                        unsigned char *err = malloc(2);
+                        return err;
+                    }
+                    else{
+                        unsigned char *err = malloc(2);
+                        err = error_generate(fun_code, check_readable);
+                        return err;
+                    }
                 }
                 else{
                     unsigned char *err = malloc(2);
@@ -2350,6 +2359,11 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
             return err;
         }
     }
+    else{
+        unsigned char *err = malloc(2);
+        err[0] = 't';
+        return err;
+    }
 
 
 }
@@ -2357,9 +2371,12 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
 
 int main(){
 
+
+
+
     unsigned char p[6]={0x01, 0x01, 0X00, 0X01, 0x00, 0x05};
     unsigned int crc = 0xC9AD;
-# 212 "modbus.c"
+# 229 "modbus.c"
     unsigned char* result = check_function(p, crc);
     for(int i=0; i<2;i++){
         printf("%x", result[i]);

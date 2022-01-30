@@ -4,7 +4,8 @@
 #include <stdlib.h>
 
 const uint8_t device_id = 0x01;
-const uint8_t holding_register = 0x01;
+const uint8_t holding_register = 0x03;
+const uint8_t coil_register = 0x01;
 const uint16_t starting_address = 0x0000;
 const uint16_t last_address = 0xFFF9;
 const uint16_t starting_quantity = 0x0000;
@@ -41,7 +42,7 @@ uint8_t check_is_readable(){
 
 //checking for a valid functional code
 uint8_t check_valid_function_code(uint8_t code){
-    if(code==holding_register){
+    if(code==holding_register || code==coil_register){
         return UINT8_C(5);
     }
     else{
@@ -156,7 +157,7 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
     //printf("%4X", start_address );
     uint16_t quantity = ((uint16_t)data[4] << 8) | (uint16_t) data[5];
     
-    quantity = 0x07D0;
+    //quantity = 0x07A0;
     //start_address = 0xF82A;
     //printf("%4X", quantity );
     if(server_ok==UINT8_C(5)){
@@ -166,9 +167,17 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
             if(quantity_check==UINT8_C(5)){
                 uint8_t check_add_quant = check_valid_address_and_quantity(start_address, quantity);
                 if(check_add_quant==UINT8_C(5)){
-                    printf("ok!\n");
-                    unsigned char *err = malloc(2);
-                    return err;
+                    uint8_t check_readable = check_is_readable();
+                    if(check_readable==UINT8_C(5)){
+                        printf("Ok!\n");
+                        unsigned char *err = malloc(2);
+                        return err;
+                    }
+                    else{
+                        unsigned char *err = malloc(2);
+                        err =  error_generate(fun_code, check_readable);
+                        return err;
+                    }
                 }
                 else{
                     unsigned char *err = malloc(2);
@@ -188,6 +197,11 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
             return err;
         }
     }
+    else{
+        unsigned char *err = malloc(2);
+        err[0] = 't';
+        return err;
+    }
 
 
 }
@@ -195,6 +209,9 @@ unsigned char* check_function(unsigned char data[6], unsigned int streamed_crc){
 
 int main(){
 
+    //01 03 00 01 00 0A 94 0D
+//01 01 00 01 00 05 AD C9
+//01 01 00 1B 00 19 8D C7
     unsigned char p[6]={0x01, 0x01, 0X00, 0X01, 0x00, 0x05};
     unsigned int crc = 0xC9AD;
     // uint8_t start_address_h = p[2];

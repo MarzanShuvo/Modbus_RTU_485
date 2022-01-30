@@ -10,6 +10,11 @@ device_id:
 	.type	holding_register, @object
 	.size	holding_register, 1
 holding_register:
+	.byte	3
+	.globl	coil_register
+	.type	coil_register, @object
+	.size	coil_register, 1
+coil_register:
 	.byte	1
 	.globl	starting_address
 	.align 2
@@ -130,14 +135,18 @@ check_valid_function_code:
 	.cfi_def_cfa_register 6
 	movl	%edi, %eax
 	movb	%al, -4(%rbp)
+	movl	$3, %eax
+	cmpb	%al, -4(%rbp)
+	je	.L11
 	movl	$1, %eax
 	cmpb	%al, -4(%rbp)
-	jne	.L11
-	movl	$5, %eax
-	jmp	.L12
+	jne	.L12
 .L11:
-	movl	$1, %eax
+	movl	$5, %eax
+	jmp	.L13
 .L12:
+	movl	$1, %eax
+.L13:
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
@@ -159,15 +168,15 @@ check_valid_quantity:
 	movw	%ax, -4(%rbp)
 	movl	$0, %eax
 	cmpw	%ax, -4(%rbp)
-	jbe	.L14
+	jb	.L15
 	movl	$2000, %eax
 	cmpw	%ax, -4(%rbp)
-	jnb	.L14
+	ja	.L15
 	movl	$5, %eax
-	jmp	.L15
-.L14:
-	movl	$3, %eax
+	jmp	.L16
 .L15:
+	movl	$3, %eax
+.L16:
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
@@ -189,16 +198,16 @@ check_address:
 	movl	$0, %eax
 	movzwl	%ax, %eax
 	cmpl	%eax, -4(%rbp)
-	jb	.L17
+	jb	.L18
 	movl	$-7, %eax
 	movzwl	%ax, %eax
 	cmpl	%eax, -4(%rbp)
-	ja	.L17
+	ja	.L18
 	movl	$5, %eax
-	jmp	.L18
-.L17:
-	movl	$0, %eax
+	jmp	.L19
 .L18:
+	movl	$0, %eax
+.L19:
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
@@ -229,17 +238,17 @@ check_valid_address_and_quantity:
 	movl	%eax, %edi
 	call	check_address
 	cmpb	$5, %al
-	jne	.L20
+	jne	.L21
 	movzwl	-2(%rbp), %eax
 	movl	%eax, %edi
 	call	check_address
 	cmpb	$5, %al
-	jne	.L20
+	jne	.L21
 	movl	$5, %eax
-	jmp	.L21
-.L20:
-	movl	$2, %eax
+	jmp	.L22
 .L21:
+	movl	$2, %eax
+.L22:
 	leave
 	.cfi_def_cfa 7, 8
 	ret
@@ -261,12 +270,12 @@ CRC_Check:
 	movl	%esi, -8(%rbp)
 	movl	-4(%rbp), %eax
 	cmpl	-8(%rbp), %eax
-	jne	.L23
+	jne	.L24
 	movl	$5, %eax
-	jmp	.L24
-.L23:
-	movl	$0, %eax
+	jmp	.L25
 .L24:
+	movl	$0, %eax
+.L25:
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
@@ -288,12 +297,12 @@ address_id_check:
 	movb	%al, -4(%rbp)
 	movl	$1, %eax
 	cmpb	%al, -4(%rbp)
-	jne	.L26
+	jne	.L27
 	movl	$5, %eax
-	jmp	.L27
-.L26:
-	movl	$0, %eax
+	jmp	.L28
 .L27:
+	movl	$0, %eax
+.L28:
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret
@@ -315,8 +324,8 @@ CRC16_2:
 	movl	%esi, -28(%rbp)
 	movl	$65535, -12(%rbp)
 	movl	$0, -8(%rbp)
-	jmp	.L29
-.L34:
+	jmp	.L30
+.L35:
 	movl	-8(%rbp), %eax
 	movslq	%eax, %rdx
 	movq	-24(%rbp), %rax
@@ -325,27 +334,27 @@ CRC16_2:
 	movzbl	%al, %eax
 	xorl	%eax, -12(%rbp)
 	movl	$8, -4(%rbp)
-	jmp	.L30
-.L33:
+	jmp	.L31
+.L34:
 	movl	-12(%rbp), %eax
 	andl	$1, %eax
 	testl	%eax, %eax
-	je	.L31
+	je	.L32
 	shrl	-12(%rbp)
 	xorl	$40961, -12(%rbp)
-	jmp	.L32
-.L31:
-	shrl	-12(%rbp)
+	jmp	.L33
 .L32:
+	shrl	-12(%rbp)
+.L33:
 	subl	$1, -4(%rbp)
-.L30:
+.L31:
 	cmpl	$0, -4(%rbp)
-	jne	.L33
+	jne	.L34
 	addl	$1, -8(%rbp)
-.L29:
+.L30:
 	movl	-8(%rbp), %eax
 	cmpl	-28(%rbp), %eax
-	jl	.L34
+	jl	.L35
 	movl	-12(%rbp), %eax
 	popq	%rbp
 	.cfi_def_cfa 7, 8
@@ -391,7 +400,7 @@ error_generate:
 	.size	error_generate, .-error_generate
 	.section	.rodata
 .LC0:
-	.string	"ok!"
+	.string	"Ok!"
 	.text
 	.globl	check_function
 	.type	check_function, @function
@@ -404,131 +413,153 @@ check_function:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
-	subq	$64, %rsp
-	movq	%rdi, -56(%rbp)
-	movl	%esi, -60(%rbp)
-	movq	-56(%rbp), %rax
+	subq	$96, %rsp
+	movq	%rdi, -88(%rbp)
+	movl	%esi, -92(%rbp)
+	movq	-88(%rbp), %rax
 	movl	$6, %esi
 	movq	%rax, %rdi
 	call	CRC16_2
-	movl	%eax, -36(%rbp)
-	movl	-60(%rbp), %edx
-	movl	-36(%rbp), %eax
+	movl	%eax, -52(%rbp)
+	movl	-92(%rbp), %edx
+	movl	-52(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	CRC_Check
-	movb	%al, -48(%rbp)
-	movq	-56(%rbp), %rax
+	movb	%al, -65(%rbp)
+	movq	-88(%rbp), %rax
 	movzbl	(%rax), %eax
-	movb	%al, -47(%rbp)
-	movzbl	-47(%rbp), %eax
+	movb	%al, -64(%rbp)
+	movzbl	-64(%rbp), %eax
 	movl	%eax, %edi
 	call	address_id_check
-	movb	%al, -46(%rbp)
-	movzbl	-46(%rbp), %edx
-	movzbl	-48(%rbp), %eax
+	movb	%al, -63(%rbp)
+	movzbl	-63(%rbp), %edx
+	movzbl	-65(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	mb_req_pdu_server
-	movb	%al, -45(%rbp)
-	movq	-56(%rbp), %rax
+	movb	%al, -62(%rbp)
+	movq	-88(%rbp), %rax
 	movzbl	1(%rax), %eax
-	movb	%al, -44(%rbp)
-	movq	-56(%rbp), %rax
+	movb	%al, -61(%rbp)
+	movq	-88(%rbp), %rax
 	addq	$2, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	sall	$8, %eax
 	movl	%eax, %edx
-	movq	-56(%rbp), %rax
+	movq	-88(%rbp), %rax
 	addq	$3, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	orl	%edx, %eax
-	movw	%ax, -40(%rbp)
-	movq	-56(%rbp), %rax
+	movw	%ax, -56(%rbp)
+	movq	-88(%rbp), %rax
 	addq	$4, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	sall	$8, %eax
 	movl	%eax, %edx
-	movq	-56(%rbp), %rax
+	movq	-88(%rbp), %rax
 	addq	$5, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	orl	%edx, %eax
-	movw	%ax, -38(%rbp)
-	movw	$2000, -38(%rbp)
-	cmpb	$5, -45(%rbp)
-	jne	.L39
-	movq	-56(%rbp), %rax
+	movw	%ax, -54(%rbp)
+	cmpb	$5, -62(%rbp)
+	jne	.L40
+	movq	-88(%rbp), %rax
 	addq	$1, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	movl	%eax, %edi
 	call	check_valid_function_code
-	movb	%al, -43(%rbp)
-	cmpb	$5, -43(%rbp)
-	jne	.L40
-	movzwl	-38(%rbp), %eax
+	movb	%al, -60(%rbp)
+	cmpb	$5, -60(%rbp)
+	jne	.L41
+	movzwl	-54(%rbp), %eax
 	movl	%eax, %edi
 	call	check_valid_quantity
-	movb	%al, -42(%rbp)
-	cmpb	$5, -42(%rbp)
-	jne	.L41
-	movzwl	-38(%rbp), %edx
-	movzwl	-40(%rbp), %eax
+	movb	%al, -59(%rbp)
+	cmpb	$5, -59(%rbp)
+	jne	.L42
+	movzwl	-54(%rbp), %edx
+	movzwl	-56(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	check_valid_address_and_quantity
-	movb	%al, -41(%rbp)
-	cmpb	$5, -41(%rbp)
-	jne	.L42
+	movb	%al, -58(%rbp)
+	cmpb	$5, -58(%rbp)
+	jne	.L43
+	movl	$0, %eax
+	call	check_is_readable
+	movb	%al, -57(%rbp)
+	cmpb	$5, -57(%rbp)
+	jne	.L44
 	leaq	.LC0(%rip), %rdi
 	call	puts@PLT
 	movl	$2, %edi
 	call	malloc@PLT
 	movq	%rax, -8(%rbp)
 	movq	-8(%rbp), %rax
-	jmp	.L38
-.L42:
+	jmp	.L45
+.L44:
 	movl	$2, %edi
 	call	malloc@PLT
 	movq	%rax, -16(%rbp)
-	movzbl	-41(%rbp), %edx
-	movzbl	-44(%rbp), %eax
+	movzbl	-57(%rbp), %edx
+	movzbl	-61(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	error_generate
 	movq	%rax, -16(%rbp)
 	movq	-16(%rbp), %rax
-	jmp	.L38
-.L41:
+	jmp	.L45
+.L43:
 	movl	$2, %edi
 	call	malloc@PLT
 	movq	%rax, -24(%rbp)
-	movzbl	-42(%rbp), %edx
-	movzbl	-44(%rbp), %eax
+	movzbl	-58(%rbp), %edx
+	movzbl	-61(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	error_generate
 	movq	%rax, -24(%rbp)
 	movq	-24(%rbp), %rax
-	jmp	.L38
-.L40:
+	jmp	.L45
+.L42:
 	movl	$2, %edi
 	call	malloc@PLT
 	movq	%rax, -32(%rbp)
-	movzbl	-43(%rbp), %edx
-	movzbl	-44(%rbp), %eax
+	movzbl	-59(%rbp), %edx
+	movzbl	-61(%rbp), %eax
 	movl	%edx, %esi
 	movl	%eax, %edi
 	call	error_generate
 	movq	%rax, -32(%rbp)
 	movq	-32(%rbp), %rax
-	jmp	.L38
-.L39:
-.L38:
+	jmp	.L45
+.L41:
+	movl	$2, %edi
+	call	malloc@PLT
+	movq	%rax, -40(%rbp)
+	movzbl	-60(%rbp), %edx
+	movzbl	-61(%rbp), %eax
+	movl	%edx, %esi
+	movl	%eax, %edi
+	call	error_generate
+	movq	%rax, -40(%rbp)
+	movq	-40(%rbp), %rax
+	jmp	.L45
+.L40:
+	movl	$2, %edi
+	call	malloc@PLT
+	movq	%rax, -48(%rbp)
+	movq	-48(%rbp), %rax
+	movb	$116, (%rax)
+	movq	-48(%rbp), %rax
+.L45:
 	leave
 	.cfi_def_cfa 7, 8
 	ret
@@ -566,8 +597,8 @@ main:
 	call	check_function
 	movq	%rax, -24(%rbp)
 	movl	$0, -32(%rbp)
-	jmp	.L45
-.L46:
+	jmp	.L47
+.L48:
 	movl	-32(%rbp), %eax
 	movslq	%eax, %rdx
 	movq	-24(%rbp), %rax
@@ -582,15 +613,15 @@ main:
 	movl	$0, %eax
 	call	printf@PLT
 	addl	$1, -32(%rbp)
-.L45:
+.L47:
 	cmpl	$1, -32(%rbp)
-	jle	.L46
+	jle	.L48
 	movl	$0, %eax
 	movq	-8(%rbp), %rcx
 	xorq	%fs:40, %rcx
-	je	.L48
+	je	.L50
 	call	__stack_chk_fail@PLT
-.L48:
+.L50:
 	leave
 	.cfi_def_cfa 7, 8
 	ret
